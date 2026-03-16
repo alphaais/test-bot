@@ -43,7 +43,7 @@
 <script>
     async function main() {
         // 1. เริ่มการทำงานของ LIFF (ใส่ ID ของคุณที่นี่)
-        await liff.init({ liffId: "YOUR_LIFF_ID" });
+        await liff.init({ liffId: "2009479906-1hsx58df" });
 
         // 2. เช็คการ Login
         if (!liff.isLoggedIn()) {
