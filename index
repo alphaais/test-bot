@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบรายงาน AlphaAIS</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #f4f7f6; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h2 { color: #333; margin-top: 0; }
+        .user-info { display: flex; align-items: center; margin-bottom: 20px; }
+        .user-info img { width: 50px; height: 50px; border-radius: 50%; margin-right: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        select, input { width: 100%; padding: 10px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; background-color: #00b900; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        button:active { background-color: #009900; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>บันทึกรายงาน QMS</h2>
+    
+    <div id="userInfo" class="user-info" style="display:none;">
+        <img id="userImg" src="" alt="Profile">
+        <p id="userName">กำลังโหลดข้อมูล...</p>
+    </div>
+
+    <label>รหัสอุปกรณ์ / พื้นที่</label>
+    <input type="text" id="assetId" placeholder="เช่น PUMP-01 หรือ Zone A">
+
+    <label>ผลการตรวจสอบ</label>
+    <select id="status">
+        <option value="ปกติ (Normal)">✅ ปกติ (Normal)</option>
+        <option value="พบปัญหา (Defect)">⚠️ พบปัญหา (Defect)</option>
+        <option value="รอซ่อมบำรุง (Maintenance)">🔧 รอซ่อมบำรุง</option>
+    </select>
+
+    <button id="btnSubmit">ส่งรายงานเข้ากลุ่ม</button>
+</div>
+
+<script>
+    async function main() {
+        // 1. เริ่มการทำงานของ LIFF (ใส่ ID ของคุณที่นี่)
+        await liff.init({ liffId: "YOUR_LIFF_ID" });
+
+        // 2. เช็คการ Login
+        if (!liff.isLoggedIn()) {
+            liff.login();
+        } else {
+            // ดึงข้อมูล Profile มาแสดง
+            const profile = await liff.getProfile();
+            document.getElementById('userInfo').style.display = 'flex';
+            document.getElementById('userImg').src = profile.pictureUrl;
+            document.getElementById('userName').innerText = "ผู้รายงาน: " + profile.displayName;
+        }
+
+        // 3. เมื่อกดปุ่มส่งข้อมูล
+        document.getElementById('btnSubmit').onclick = async function() {
+            const asset = document.getElementById('assetId').value;
+            const status = document.getElementById('status').value;
+
+            if (!asset) {
+                alert("กรุณากรอกรหัสอุปกรณ์");
+                return;
+            }
+
+            try {
+                // ส่ง Flex Message
+                await liff.sendMessages([
+                    {
+                        "type": "flex",
+                        "altText": "รายงานตรวจสอบจากคุณ " + (await liff.getProfile()).displayName,
+                        "contents": {
+                            "type": "bubble",
+                            "body": {
+                                "type": "box",
+                                "layout": "vertical",
+                                "contents": [
+                                    { "type": "text", "text": "QMS INSPECTION", "weight": "bold", "color": "#1DB446", "size": "sm" },
+                                    { "type": "text", "text": "รายงานสถานะงาน", "weight": "bold", "size": "xl", "margin": "md" },
+                                    { "type": "separator", "margin": "xxl" },
+                                    {
+                                        "type": "box",
+                                        "layout": "vertical",
+                                        "margin": "xxl",
+                                        "spacing": "sm",
+                                        "contents": [
+                                            {
+                                                "type": "box",
+                                                "layout": "horizontal",
+                                                "contents": [
+                                                    { "type": "text", "text": "อุปกรณ์:", "size": "sm", "color": "#555555", "flex": 1 },
+                                                    { "type": "text", "text": asset, "size": "sm", "color": "#111111", "flex": 2, "align": "end", "weight": "bold" }
+                                                ]
+                                            },
+                                            {
+                                                "type": "box",
+                                                "layout": "horizontal",
+                                                "contents": [
+                                                    { "type": "text", "text": "ผลตรวจสอบ:", "size": "sm", "color": "#555555", "flex": 1 },
+                                                    { "type": "text", "text": status, "size": "sm", "color": (status.includes('ปกติ') ? "#1DB446" : "#E63946"), "flex": 2, "align": "end", "weight": "bold" }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    { "type": "text", "text": "บันทึกเมื่อ: " + new Date().toLocaleString('th-TH'), "size": "xxs", "color": "#aaaaaa", "margin": "xl" }
+                                ]
+                            }
+                        }
+                    }
+                ]);
+                
+                alert("ส่งรายงานเรียบร้อย!");
+                liff.closeWindow(); // ปิดหน้าจอทันที
+            } catch (err) {
+                alert("เกิดข้อผิดพลาด: " + err.message);
+            }
+        };
+    }
+    main();
+</script>
+
+</body>
+</html>
